@@ -1,0 +1,383 @@
+---
+title: "DS_Classification_Assignment"
+author: "Kali Prasad"
+date: "April 14, 2019"
+output: word_document
+---
+
+#Introduction:
+ Classification algorihtms are used to resolve the given problem to identify to which set   of categories the given test features belong based on the training data set.
+ Observations:
+ Given problem is a mulit-class classifer problem, There are 140 records in training set    and 560 records in test data.
+ There are three categorical with string values and remaining 900 are continious numeric values, so in total there are 903  classifiers
+ 
+#Classification approachs :
+There are different type of classification alorithms are avalible, based on the type of data and required solution appropriate algorithms are chosed, in this case given problem is a multi-class classifer. Support Vector Machine or SVM from package e1071, KNN (K-Nearest Neighbours Algorithm)from package CLASS and decision tree algorithms from package party are used.
+
+``` {r}
+library(e1071)
+library(MASS)
+library(class)
+library(party)
+```
+
+#Data Extraction and Cleaning/Prep
+ Given data files are loaded into R script using read.csv() functions. 
+ train data set is extracted
+``` {r}
+getwd()
+setwd("C:\\Users\\prasadk\\Desktop\\KALI\\Mines\\Statistical Methods II\\Projects")
+getwd()
+#reading training data
+train <- read.csv("Train1.csv", sep="," , check.names = FALSE, fileEncoding ="UTF-8-BOM", header = FALSE)
+nrow(train)
+str(train)
+```
+Test data extraction
+```{r}
+
+#reading test data
+test <- read.csv("Test.csv", sep="," , check.names = FALSE, fileEncoding ="UTF-8-BOM", header = FALSE) 
+head(test)
+nrow(test)
+
+```
+
+label data extraction 
+```{r}
+
+#reading label
+labl <- read.csv("Train_Labels.csv", sep="," , check.names = FALSE, fileEncoding ="UTF-8-BOM",header = FALSE) 
+head(labl)
+nrow(labl)
+
+```
+Reading test label
+
+```{r}
+#reading test label
+testl <- read.csv("Test_Labels.csv", sep="," , check.names = FALSE, fileEncoding ="UTF-8-BOM",header = FALSE) 
+head(testl)
+nrow(testl)
+```
+ 
+ Given data doesn't have columns names, so column names are created from easy processing prospective. 
+First three columns of text classifiers are given with column names text1, text2, text3.
+``` {r}
+#assigning colnames for the data
+#taining data
+names(train) <- paste0('conti', 1:903)
+head(train)
+names(train)[1:3] <- c( "text1" , "text2" , "text3")
+head(train)
+```
+same with test data as well, 1st three columns are named with text1, text2 and text3 and rest continious features are named from conti4 to conti903
+```{r}
+#test data
+names(test) <- paste0('conti', 1:903)
+head(test)
+names(test)[1:3] <- c( "text1" , "text2" , "text3")
+head(test)
+```
+column name of label is named as y.
+```{r}
+#Label
+names(labl) <- c("y")
+head(labl)
+
+names(testl) <- c("y")
+head(testl)
+```
+
+While fitting classification model for SVM function it is important to convert reponse variable or feature as factor variable.
+```{r}
+#converting labels into factors 
+train$y <- as.factor(labl$y)
+head(train$y)
+dat <- train
+head(dat)
+
+test$y <- as.factor(testl$y)
+head(test$y)
+```
+
+To fit classification model all the features are to be continious. So three categorical variables are converted and replaced with dummy variables. Using numeric dummy variables is one of the best way to represent the text or string categorical values. 
+contrasts() function is used to generate numerical categories. 
+
+
+For Training data
+1st text feature where txt1.dmy1 = 1 if it is right otherwise 0. 
+``` {r}
+#categorical variable 1 
+contrasts(dat$text1, contrasts = TRUE, sparse = FALSE)
+#dummy1
+dat$txt1.dmy1 <- c(ifelse(dat$text1 == 'right', 1, 0))
+head(dat$txt1.dmy1)
+tail(dat$txt1.dmy1)
+```
+txt2.dmy1 and txt2.dmy2 two dummy variables are used to replace second text feature which got three contrasts.
+ 
+```{r}
+#categorical variable 2 
+contrasts(dat$text2, contrasts = TRUE, sparse = FALSE)
+#dummy1
+dat$txt2.dmy1 <- c(ifelse(dat$text2 == 'type_2', 1, 0))
+dat$txt2.dmy1
+#dummy2
+dat$txt2.dmy2 <- c(ifelse(dat$text2 == 'type_3', 1, 0))
+dat$txt2.dmy2
+```
+txt3.dmy1 and txt3.dmy2 are used to replace third text feature variables with three catergories blue, green and red
+```{r}
+#categorical variable 2
+contrasts(dat$text3, contrasts = TRUE, sparse = FALSE)
+dat$txt3.dmy1 <- c(ifelse(dat$text3 == 'green', 1, 0))
+dat$txt3.dmy1
+
+dat$txt3.dmy2 <- c(ifelse(dat$text3 == 'red', 1, 0))
+dat$txt3.dmy2
+```
+
+
+Similarly test data also cleaned and prepared like training data where catergorical text variables are replaced with dummy variables
+```{r}
+contrasts(test$text1, contrasts = TRUE, sparse = FALSE)
+#dummy1
+test$txt1.dmy1 <- c(ifelse(test$text1 == 'right', 1, 0))
+head(test$txt1.dmy1)
+```
+
+```{r}
+#categorical variable 2 
+contrasts(test$text2, contrasts = TRUE, sparse = FALSE)
+#dummy1
+test$txt2.dmy1 <- c(ifelse(test$text2 == 'type_2', 1, 0))
+head(test$txt2.dmy1)
+#dummy2
+test$txt2.dmy2 <- c(ifelse(test$text2 == 'type_3', 1, 0))
+head(test$txt2.dmy2)
+```
+
+```{r}
+#categorical variable 2
+contrasts(test$text3, contrasts = TRUE, sparse = FALSE)
+test$txt3.dmy1 <- c(ifelse(test$text3 == 'green', 1, 0))
+head(test$txt3.dmy1)
+
+test$txt3.dmy2 <- c(ifelse(test$text3 == 'red', 1, 0))
+head(test$txt3.dmy2)
+```
+```{r}
+#drop from train data
+data.final = subset(dat, select = -c(text1, text2, text3))
+head(data.final$y)
+head(data.final)
+
+#drop from train data
+test.final = subset(test, select = -c(text1, text2, text3))
+head(test.final)
+
+```
+#Model fitting - SVM
+SVM classification was developed in 1990s and it often considered as one of the best "out of the box" classifer. SVM is a generalization of a simple and intuitive classifer called the maximal margin classifer. SVM algorithm main goal is to find a hyperplane in a P-dimensioal space. so in p-dimensional plane it will be p-1 dimensional flat subspace.
+
+Just to get to feel the data the given training data set is split into training and testing with 120 records and 20 records respectively. 
+Then SVM model is fitted on those 120 records and tested on 20 records. Accuracy is calculated . 
+
+```{r}
+training = (data.final[1:120,])
+head(training$y)
+nrow(training)
+testing = data.final[121:140,]
+nrow(testing)
+```
+Fitting SVM model 
+```{r}
+svmfit2 = svm(training$y ~.,data = training, cost = 10, kernel = 'linear', scale = FALSE )
+summary(svmfit2)
+```
+From above output we conclude that linear kernel was used with cost = 10 and there were 119 support vectors, where 70 in class '0' , 36 in class '1' and 13 in class '2'.
+
+Predicting 20 test records and checking the accuracy
+
+```{r}
+pred<-predict(svmfit2,newdata = testing)
+svm_t<-table(pred,testing$y)
+svm_t
+```
+when we add up diagonal elements there 15 correct prediction out of 20 which is about 75% accuracy . 
+####### Checking Accuracy of prediction ########
+```{r}
+print("Total number of correct hit: ")
+sum(diag(svm_t))
+sum(diag(svm_t))/sum(svm_t)
+
+```
+Fitting SVM on given test data based on train data.  Since P > 2 ,i.e. multi-class classifier kernel is radial and we used gamma to specify a value of gamma for the radial basis kernel. 
+```{r}
+svmfit = svm(data.final$y ~.,data = data.final, cost = 10, scale = FALSE , kernel = 'radial' , gamma = 1)
+summary(svmfit)
+```
+from summary() function output we can observe that there are 140 support vectors,radial kernel is used with cost value 10 where 82 in class '0', 41 in class '1' and 17 in calss '2'. 
+
+Now predicting using this fitted SVM model for test data followed by accuracy checking. 
+```{r}
+pred.t5<-predict(svmfit,newdata = test.final)
+svm_t5<-table(pred.t5, test.final$y)
+svm_t5
+sum(diag(svm_t5))/sum(svm_t5)
+```
+Accuracy = (total number of correct)/(total number of instances)
+
+Fitted model is predicting 58.57% percentage which is not convincing. 
+Tuning : Flxibility of SVM model is that we can tune by varing cost values and checking which cost value parameter can predict with maximum accuracy. 
+
+``` {r}
+##### Tuning to find the best cost parameter ########
+l_max = rep(0,2)
+l_max
+for(i in 1 : 100)
+ {
+  svm_best = svm(data.final$y ~.,data = data.final, cost = i , scale = FALSE , kernel = 'radial')
+  
+  pred.best<-predict(svmfit,newdata = test.final)
+  svm_b<-table(pred.best, test.final$y)
+  l_per = sum(diag(svm_b))/sum(svm_b)
+   
+    
+    if ( l_per > l_max[1])
+    {
+      l_max[1] = l_per
+      l_max[2] = i
+    }
+    i = i + 5
+   }
+ l_max
+```
+
+From the above output it is evident that cost = 1 is the best model. 
+
+```{r}
+svmfit.f = svm(data.final$y ~.,data = data.final, cost = 1, scale = FALSE , kernel = 'radial', gamma =1)
+ summary(svmfit.f)
+ 
+ pred.f<-predict(svmfit.f,newdata = test.final)
+ svm_f<-table(pred.f, test.final$y)
+ svm_f
+ 
+ svm_bst <- sum(diag(svm_f))/sum(svm_f)
+ svm_bst
+```
+Output with cost = 1 the best fitted model is also predicting test data at 58.57% 
+
+Let's check with other classification algorithm and compare each other results in terms of accuracy. 
+
+#KNN - K-Nearest Neighbour Classification 
+We will apply KNN classification algorithim using knn() function, which is part of the class library. 
+KNN process is little different, it just one step approach just using knn() function and passing four parameters unlike in other methods where we first fit the model and then we use model to predict.
+
+
+```{r}
+#Creating data frame for response variables i,e. classes
+ y <- data.final$y
+ test.y <- test.final$y
+```
+ 
+ 
+1st running knn() function with k =1
+```{r}
+ 
+# KNN where K = 1 
+knn.pred = knn(data.final, test.final, y, k =1)
+knn.f <-table(knn.pred, test.y )
+knn.f 
+sum(diag(knn.f))/sum(knn.f)
+```
+KNN predicted 49.46% which is less then SVM best model. 
+
+Let's tune further with k = 3 to reach more accuracy.
+```{r}
+# KNN where K = 3  
+knn.pred2 = knn(data.final, test.final, y, k =3)
+knn.f2 <-table(knn.pred2, test.y )
+knn.f2
+knn_bst <- sum(diag(knn.f2))/sum(knn.f2)
+knn_bst
+
+```
+from above output it is clearly evident that k=3 is much better as it improved accuracy from 49.46% to 51.78%.
+
+Plotting predicted values by classess. 
+```{r}
+plot(knn.pred2, col = 'blue')
+```
+
+
+#Decision Tree 
+After using SVM and KNN checked with decision tree or ctree() from package party. 
+```{r}
+profp_tree <- ctree(y~ ., data = data.final)
+summary(profp_tree)
+```
+Using ctree() function classify data based on trees, with class type binary and Mode S4. Used train data to fit the model and ploting of the fitted model is as below.
+
+```{r}
+plot(profp_tree)
+```
+
+From above plot it is visible that training data got 5 leaf nodes, with Node 3 got 68 records, Node 4 got 7 instances , Node 6 got 36 instances, Node 8 got 15 instances and Node 9 got 14 instances. 
+Each leaf node is classified into 0, 1 and 2 classes.
+
+Using Predict() function on test data with checking the accuracy. 
+
+```{r}
+pred.ctr <- predict(profp_tree, test.final)
+tree.tab <- table(pred.ctr,test.final$y)
+tree.tab
+print("Number of correct")
+print(sum(diag(tree.tab)))
+print("Number of total")
+print(sum(tree.tab))
+tr.bst <- sum(diag(tree.tab))/sum(tree.tab)
+
+tr.bst
+```
+
+#Model comparision:
+ After comparing accuracy between svm vs KNN vs Decision Tree, SVM is best option with 58.57%. 
+ 
+```{r}
+output = rep(0, 3)
+output[1] = svm_bst  * 100
+output[2] = knn_bst  * 100
+output[3] = tr.bst * 100
+
+#BAR PLOT
+barplot(output, main = 'Classification Result Accuracy Comparision',  col=c('red','orange', 'darkgray'), lwd = 2,
+        xlab =  'SVM vs KNN vs TREE ', ylab = 'Accuracy in Percentage' , space = 1, names.arg = c('SVM', 'KNN', 'TREE'))
+``` 
+
+Saving predicted values on local drive.
+```{r}
+################################ saving prediction data on file #############################
+getwd()
+write.csv(pred.f, file = "Kali_Prasad_test_predictions_SVM.csv")
+write.csv(knn.pred2, file = "Kali_Prasad_test_predictions_KNN.csv")
+write.csv(pred.ctr, file = "Kali_Prasad_test_predictions_tree.csv")
+#sink()
+
+```
+
+#Future Enhancement
+After going through diffrent steps of data preparation and prediction all three model prediction accuracy is between 58% to 47%, svm being the best accuracy rate 
+
+To enhance and improve the prediction accuracy rate :
+ 1. Model need to be fitted with more sample and training data
+ 2. Exploring other advanced algorithms like Random Forest, boosted trees , neural networks etc
+  
+Better visual plots can utilized the shared results with management and business leaders to make better decision. 
+
+#Conclusion
+ More data and fitting model with other alogithms should help to improve the accuracy. Overall with the given data all the classification came up with more or less same results. So, definetly more and better data can help this classdification problem to resolve. 
+ 
+
