@@ -1,0 +1,99 @@
+#----------------------------------------
+# Plotting the coronavirus across the world 
+# till today
+#----------------------------------------
+# Data: coronavirus dataset from the coronavirus package
+#----------------------------------------
+# Loading the package and dataset
+devtools::install_github("RamiKrispin/coronavirus", force = TRUE)
+library(dplyr)
+library(ggplot2)
+library(coronavirus)
+data("coronavirus")
+head(coronavirus)
+tail(coronavirus)
+nrow(coronavirus)
+
+sum_top <- coronavirus %>% group_by(Country.Region, type )%>%
+  summarise(tot_cse = sum(cases)) %>%
+  arrange(-tot_cse)
+
+sum_top%>% head(10)
+ 
+
+summry_df <- coronavirus %>% group_by(Country.Region, date, type )%>%
+             summarise(tot_cse = sum(cases)) %>%
+             arrange(date)
+             
+
+summry_df %>% head(10)
+
+# China
+df_china <- summry_df %>% filter(Country.Region == "Mainland China") %>%
+          group_by( date, type )%>%
+          summarise(tot_cse = sum(tot_cse)) %>%
+         arrange(date)
+head(df_china)
+
+ggplot(df_china, aes(x = date, y = tot_cse, fill = type)) +geom_col() + ggtitle("Mainland China") +
+        xlab("Date)") + ylab("Total Cases") + 
+  scale_fill_manual(values=c("confirmed"="red", "death"="black", "recovered"="blue"))
+
+# South Korea
+df_kor <- summry_df %>% filter(Country.Region == "South Korea") %>%
+  group_by( date, type )%>%
+  summarise(tot_cse = sum(tot_cse)) %>%
+  arrange(date)
+head(df_kor)
+
+ggplot(df_kor, aes(x = date, y = tot_cse, fill = type)) +geom_col() + ggtitle("South Korea") +
+  xlab("Date)") + ylab("Total Cases") + 
+  scale_fill_manual(values=c("confirmed"="red", "death"="black", "recovered"="blue"))
+
+# Italy
+df_Italy <- summry_df %>% filter(Country.Region == "Italy") %>%
+  group_by( date, type )%>%
+  summarise(tot_cse = sum(tot_cse)) %>%
+  arrange(date)
+head(df_Italy)
+
+ggplot(df_Italy, aes(x = date, y = tot_cse, fill = type)) +geom_col() + ggtitle("Italy") +
+  xlab("Date)") + ylab("Total Cases") + 
+  scale_fill_manual(values=c("confirmed"="red", "death"="black", "recovered"="blue"))
+
+# Iran
+df_Iran <- summry_df %>% filter(Country.Region == "Iran") %>%
+  group_by( date, type )%>%
+  summarise(tot_cse = sum(tot_cse)) %>%
+  arrange(date)
+head(df_Iran)
+
+ggplot(df_Iran, aes(x = date, y = tot_cse, fill = type)) +geom_col() + ggtitle("Iran") +
+  xlab("Date)") + ylab("Total Cases") + 
+  scale_fill_manual(values=c("confirmed"="red", "death"="black", "recovered"="blue"))
+
+# Japan
+df_Japan <- summry_df %>% filter(Country.Region == "Japan") %>%
+  group_by( date, type )%>%
+  summarise(tot_cse = sum(tot_cse)) %>%
+  arrange(date)
+head(df_Japan)
+
+ggplot(df_Japan, aes(x = date, y = tot_cse, fill = type)) +geom_col() + ggtitle("Japan") +
+  xlab("Date)") + ylab("Total Cases") + 
+  scale_fill_manual(values=c("confirmed"="red", "death"="black", "recovered"="blue"))
+
+#Rest of the world
+df_row <- summry_df %>% filter(Country.Region != "Japan" & Country.Region != "Italy" &
+                               Country.Region != "Iran" & Country.Region != "South Korea" &
+                                 Country.Region != "Mainland China") %>%
+  group_by( date, type )%>%
+  summarise(tot_cse = sum(tot_cse)) %>%
+  arrange(date)
+
+nrow(df_row)
+head(df_row)
+
+ggplot(df_row, aes(x = date, y = tot_cse, fill = type)) +geom_col() + ggtitle("Rest of the World") +
+  xlab("Date)") + ylab("Total Cases") + 
+  scale_fill_manual(values=c("confirmed"="red", "death"="black", "recovered"="blue"))
